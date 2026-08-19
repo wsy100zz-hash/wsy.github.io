@@ -1,6 +1,389 @@
 <!DOCTYPE html>
- <html>
- <body>
- <h1>泥嚎呀</h1>
- </body>
- </html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>自我介绍 · 个人主页</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg-soft: #161a23;
+    --card: #1b2130;
+    --card-hover: #222a3c;
+    --text: #e8eaf0;
+    --muted: #9aa3b5;
+    --accent-1: #6c7bff;
+    --accent-2: #22d3ee;
+    --accent-3: #f472b6;
+    --radius: 18px;
+    --shadow: 0 12px 40px rgba(0, 0, 0, 0.45);
+  }
+ 
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+ 
+  html { scroll-behavior: smooth; }
+ 
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei",
+      "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+ 
+  /* 背景光斑 */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(600px 400px at 15% 10%, rgba(108, 123, 255, 0.18), transparent 60%),
+      radial-gradient(500px 400px at 85% 25%, rgba(34, 211, 238, 0.14), transparent 60%),
+      radial-gradient(500px 400px at 50% 90%, rgba(244, 114, 182, 0.12), transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+  }
+ 
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px;
+  }
+ 
+  /* ===== Hero ===== */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 80px 24px;
+  }
+ 
+  .avatar {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 56px;
+    font-weight: 700;
+    color: #fff;
+    background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+    box-shadow: 0 0 0 6px rgba(108, 123, 255, 0.15), 0 20px 50px rgba(108, 123, 255, 0.35);
+    animation: float 4s ease-in-out infinite;
+  }
+ 
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-14px); }
+  }
+ 
+  .hero h1 {
+    font-size: clamp(2.4rem, 6vw, 4rem);
+    font-weight: 800;
+    margin-top: 28px;
+    letter-spacing: -0.5px;
+  }
+ 
+  .gradient-text {
+    background: linear-gradient(90deg, var(--accent-1), var(--accent-2), var(--accent-3));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+ 
+  .hero .tagline {
+    color: var(--muted);
+    font-size: 1.15rem;
+    margin-top: 14px;
+    max-width: 560px;
+  }
+ 
+  .hero .meta {
+    margin-top: 28px;
+    font-size: 0.95rem;
+    color: var(--muted);
+  }
+ 
+  .scroll-hint {
+    position: absolute;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: var(--muted);
+    font-size: 0.8rem;
+    animation: blink 2s ease-in-out infinite;
+  }
+ 
+  @keyframes blink { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; } }
+ 
+  /* ===== 区块 ===== */
+  section { padding: 70px 0; }
+ 
+  .section-title {
+    font-size: clamp(1.8rem, 4vw, 2.4rem);
+    font-weight: 800;
+    margin-bottom: 12px;
+  }
+ 
+  .section-sub {
+    color: var(--muted);
+    margin-bottom: 34px;
+    font-size: 0.95rem;
+  }
+ 
+  /* ===== 关于 ===== */
+  .about-card {
+    background: var(--card);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius);
+    padding: 36px;
+    box-shadow: var(--shadow);
+  }
+ 
+  .about-card p { color: var(--muted); font-size: 1.02rem; }
+  .about-card p + p { margin-top: 12px; }
+ 
+  /* ===== 技能 ===== */
+  .skills-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 18px;
+  }
+ 
+  .skill-card {
+    background: var(--card);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius);
+    padding: 24px;
+    transition: transform 0.25s ease, background 0.25s ease;
+  }
+ 
+  .skill-card:hover { transform: translateY(-6px); background: var(--card-hover); }
+ 
+  .skill-card h3 { font-size: 1.05rem; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .skill-card .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+ 
+  .bar {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .bar span {
+    display: block;
+    height: 100%;
+    width: 0;
+    border-radius: 99px;
+    background: linear-gradient(90deg, var(--accent-1), var(--accent-2));
+    transition: width 1.2s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .skill-level { font-size: 0.8rem; color: var(--muted); margin-top: 8px; }
+ 
+  /* ===== 经历时间线 ===== */
+  .timeline { position: relative; padding-left: 28px; }
+  .timeline::before {
+    content: "";
+    position: absolute;
+    left: 8px; top: 6px; bottom: 6px;
+    width: 2px;
+    background: linear-gradient(var(--accent-1), var(--accent-2), transparent);
+  }
+  .timeline-item { position: relative; margin-bottom: 28px; }
+  .timeline-item::before {
+    content: "";
+    position: absolute;
+    left: -26px; top: 8px;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--accent-2);
+    box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.18);
+  }
+  .timeline-item .time { font-size: 0.82rem; color: var(--accent-2); font-weight: 600; }
+  .timeline-item h3 { font-size: 1.12rem; margin: 4px 0; }
+  .timeline-item p { color: var(--muted); font-size: 0.95rem; }
+ 
+  /* ===== 联系 ===== */
+  .contact-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+  }
+  .contact-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--card);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: var(--radius);
+    padding: 18px 20px;
+    text-decoration: none;
+    color: var(--text);
+    transition: transform 0.25s ease, background 0.25s ease;
+  }
+  .contact-card:hover { transform: translateY(-4px); background: var(--card-hover); }
+  .contact-card .icon {
+    width: 40px; height: 40px;
+    border-radius: 12px;
+    display: grid; place-items: center;
+    font-size: 1.2rem;
+    background: rgba(108, 123, 255, 0.16);
+    flex-shrink: 0;
+  }
+  .contact-card .label { font-size: 0.78rem; color: var(--muted); }
+  .contact-card .value { font-size: 0.95rem; font-weight: 600; word-break: break-all; }
+ 
+  /* ===== 页脚 ===== */
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.85rem;
+    padding: 40px 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+  }
+ 
+  /* ===== 进入动画 ===== */
+  .reveal {
+    opacity: 0;
+    transform: translateY(26px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+  }
+  .reveal.visible { opacity: 1; transform: none; }
+ 
+  @media (max-width: 640px) {
+    .about-card { padding: 24px; }
+  }
+</style>
+</head>
+<body>
+ 
+  <!-- Hero -->
+  <header class="hero container">
+    <div class="avatar">你</div>
+    <h1>你好，我是 <span class="gradient-text">你的名字</span></h1>
+    <p class="tagline">
+      一句话介绍自己 —— 你的职业 / 身份 / 正在做的事，用一句有吸引力的话概括。
+    </p>
+    <p class="meta">📍 所在城市　·　📧 your.email@example.com</p>
+    <div class="scroll-hint">向下滚动 ↓</div>
+  </header>
+ 
+  <!-- 关于我 -->
+  <section class="container reveal">
+    <h2 class="section-title">关于我</h2>
+    <p class="section-sub">About Me</p>
+    <div class="about-card">
+      <p>这里是你的个人简介第一段。介绍你的背景、经历、性格，以及你对于所从事领域的热爱。</p>
+      <p>第二段可以写你的专业技能方向、正在专注的事情，或者一句你相信的理念。</p>
+      <p>第三段可以写你的兴趣爱好、业余生活，让别人更全面地认识真实的你。</p>
+    </div>
+  </section>
+ 
+  <!-- 技能 -->
+  <section class="container reveal">
+    <h2 class="section-title">技能特长</h2>
+    <p class="section-sub">Skills</p>
+    <div class="skills-grid">
+      <div class="skill-card">
+        <h3><span class="dot" style="background:var(--accent-1)"></span>前端开发</h3>
+        <div class="bar"><span data-level="90"></span></div>
+        <div class="skill-level">90% · 熟练</div>
+      </div>
+      <div class="skill-card">
+        <h3><span class="dot" style="background:var(--accent-2)"></span>设计 / UI</h3>
+        <div class="bar"><span data-level="80"></span></div>
+        <div class="skill-level">80% · 熟练</div>
+      </div>
+      <div class="skill-card">
+        <h3><span class="dot" style="background:var(--accent-3)"></span>项目管理</h3>
+        <div class="bar"><span data-level="70"></span></div>
+        <div class="skill-level">70% · 进阶</div>
+      </div>
+    </div>
+  </section>
+ 
+  <!-- 经历 -->
+  <section class="container reveal">
+    <h2 class="section-title">经历</h2>
+    <p class="section-sub">Experience</p>
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="time">2024 — 至今</div>
+        <h3>职位名称 · 公司 / 组织</h3>
+        <p>一句话描述你在这个岗位上负责的工作或取得的成果。</p>
+      </div>
+      <div class="timeline-item">
+        <div class="time">2022 — 2024</div>
+        <h3>职位名称 · 公司 / 组织</h3>
+        <p>一句话描述你在这个岗位上负责的工作或取得的成果。</p>
+      </div>
+      <div class="timeline-item">
+        <div class="time">2018 — 2022</div>
+        <h3>学校 · 专业 / 学位</h3>
+        <p>一句话描述你的教育背景或在校经历。</p>
+      </div>
+    </div>
+  </section>
+ 
+  <!-- 联系 -->
+  <section class="container reveal">
+    <h2 class="section-title">联系我</h2>
+    <p class="section-sub">Contact</p>
+    <div class="contact-grid">
+      <a class="contact-card" href="mailto:your.email@example.com">
+        <span class="icon">✉️</span>
+        <span>
+          <span class="label">邮箱</span><br>
+          <span class="value">your.email@example.com</span>
+        </span>
+      </a>
+      <a class="contact-card" href="https://github.com/yourname" target="_blank" rel="noopener">
+        <span class="icon">🐙</span>
+        <span>
+          <span class="label">GitHub</span><br>
+          <span class="value">@yourname</span>
+        </span>
+      </a>
+      <a class="contact-card" href="tel:+86-138-0000-0000">
+        <span class="icon">📱</span>
+        <span>
+          <span class="label">电话</span><br>
+          <span class="value">+86-138-0000-0000</span>
+        </span>
+      </a>
+      <a class="contact-card" href="#">
+        <span class="icon">💬</span>
+        <span>
+          <span class="label">微信</span><br>
+          <span class="value">your-wechat-id</span>
+        </span>
+      </a>
+    </div>
+  </section>
+ 
+  <footer>© 2026 你的名字 · 用 ❤ 制作</footer>
+ 
+<script>
+  // 滚动进入动画
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        // 技能条动画
+        e.target.querySelectorAll('.bar span').forEach(bar => {
+          bar.style.width = bar.dataset.level + '%';
+        });
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.15 });
+ 
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+<\/script>
+</body>
+</html>
