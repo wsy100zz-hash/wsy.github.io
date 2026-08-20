@@ -387,3 +387,182 @@
 <\/script>
 </body>
 </html>
+    <!-- ===== 留言板 HTML ===== -->
+<div id="guestbook">
+  <h2>💬 留言板</h2>
+  <div id="message-list"></div>
+
+  <form id="message-form">
+    <input type="text" id="name-input" placeholder="你的昵称" required />
+    <textarea id="message-input" placeholder="写点什么吧..." rows="3" required></textarea>
+    <button type="submit">提交留言</button>
+  </form>
+</div>
+
+<style>
+  #guestbook {
+    max-width: 600px;
+    margin: 40px auto;
+    padding: 20px;
+    background: #f9f9f9;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    font-family: system-ui, -apple-system, sans-serif;
+  }
+  #guestbook h2 {
+    margin-top: 0;
+    color: #333;
+  }
+  #message-list {
+    margin-bottom: 20px;
+    max-height: 400px;
+    overflow-y: auto;
+  }
+  .msg-item {
+    background: white;
+    padding: 12px 16px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+  .msg-item .msg-name {
+    font-weight: 600;
+    color: #4A90D9;
+  }
+  .msg-item .msg-time {
+    float: right;
+    font-size: 0.8rem;
+    color: #999;
+  }
+  .msg-item .msg-text {
+    margin-top: 6px;
+    color: #444;
+    word-break: break-word;
+  }
+  #message-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  #message-form input,
+  #message-form textarea {
+    padding: 10px 14px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+  }
+  #message-form input:focus,
+  #message-form textarea:focus {
+    border-color: #4A90D9;
+    outline: none;
+  }
+  #message-form button {
+    background: #4A90D9;
+    color: white;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  #message-form button:hover {
+    background: #357ABD;
+  }
+  .empty-msg {
+    color: #aaa;
+    text-align: center;
+    padding: 20px 0;
+  }
+</style>
+
+<script>
+  (async function() {
+    const API_BASE = 'https://chenmy.cc.cd/api/message'; // 修改为您的 Worker 地址
+
+    const listEl = document.getElementById('message-list');
+    const form = document.getElementById('message-form');
+    const nameInput = document.getElementById('name-input');
+    const msgInput = document.getElementById('message-input');
+
+    // 加载留言
+    async function loadMessages() {
+      try {
+        const res = await fetch(API_BASE);
+        if (!res.ok) throw new Error('加载失败');
+        const data = await res.json();
+        renderMessages(data);
+      } catch (e) {
+        listEl.innerHTML = '<div class="empty-msg">⚠️ 留言加载失败，请稍后重试</div>';
+        console.error(e);
+      }
+    }
+
+    // 渲染留言列表
+    function renderMessages(messages) {
+      if (!messages || messages.length === 0) {
+        listEl.innerHTML = '<div class="empty-msg">✨ 还没有留言，快来抢沙发吧~</div>';
+        return;
+      }
+      let html = '';
+      messages.forEach(msg => {
+        const time = new Date(msg.time).toLocaleString('zh-CN');
+        html += `
+          <div class="msg-item">
+            <span class="msg-name">${escapeHtml(msg.name)}</span>
+            <span class="msg-time">${time}</span>
+            <div class="msg-text">${escapeHtml(msg.message)}</div>
+          </div>
+        `;
+      });
+      listEl.innerHTML = html;
+    }
+
+    // 简单的防 XSS 转义
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // 提交留言
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = nameInput.value.trim();
+      const message = msgInput.value.trim();
+      if (!name || !message) return alert('请填写完整内容');
+
+      const submitBtn = form.querySelector('button');
+      submitBtn.disabled = true;
+      submitBtn.textContent = '提交中...';
+
+      try {
+        const res = await fetch(API_BASE, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, message })
+        });
+        const result = await res.json();
+        if (result.success) {
+          // 重新加载留言列表
+          await loadMessages();
+          msgInput.value = '';
+          // 可选保留昵称
+        } else {
+          alert(result.error || '提交失败');
+        }
+      } catch (err) {
+        alert('网络错误，请稍后重试');
+        console.error(err);
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = '提交留言';
+      }
+    });
+
+    // 初始化加载
+    await loadMessages();
+  })();
+</script>
