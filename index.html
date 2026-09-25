@@ -1,1 +1,220 @@
-你好，丁我c你木
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>你是否姓丁？</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    min-height: 100vh;
+    background: #0a0a0a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    overflow: hidden;
+  }
+
+  /* 首次弹窗 */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    animation: fadeIn 0.4s ease;
+  }
+
+  .modal {
+    background: #1c1c1c;
+    border: 2px solid #ff3b3b;
+    border-radius: 18px;
+    padding: 48px 42px;
+    text-align: center;
+    max-width: 420px;
+    width: 90%;
+    box-shadow: 0 0 60px rgba(255, 59, 59, 0.45);
+    animation: pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .modal h1 {
+    color: #fff;
+    font-size: 34px;
+    letter-spacing: 2px;
+    margin-bottom: 36px;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+  }
+
+  .btn {
+    border: none;
+    cursor: pointer;
+    font-size: 22px;
+    padding: 14px 42px;
+    border-radius: 40px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .btn-yes { background: #2ecc71; color: #fff; }
+  .btn-no  { background: #e74c3c; color: #fff; }
+
+  .btn:hover { transform: scale(1.08); }
+  .btn-yes:hover { box-shadow: 0 0 30px #2ecc71; }
+  .btn-no:hover  { box-shadow: 0 0 30px #e74c3c; }
+
+  /* warning 弹窗 */
+  .warning-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.9);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    animation: fadeIn 0.3s ease;
+  }
+
+  .warning-box {
+    background: #1a1a1a;
+    border: 3px solid #ffd23b;
+    border-radius: 16px;
+    padding: 44px 48px;
+    text-align: center;
+    box-shadow: 0 0 80px rgba(255, 210, 59, 0.5);
+    animation: shake 0.5s ease;
+  }
+
+  .warning-title {
+    color: #ffd23b;
+    font-size: 52px;
+    font-weight: 900;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+    text-shadow: 0 0 20px #ffd23b;
+  }
+
+  .warning-text {
+    color: #fff;
+    font-size: 26px;
+    letter-spacing: 3px;
+  }
+
+  /* 恐怖满屏 */
+  .scary-screen {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 300;
+    animation: horrorFlicker 0.6s infinite;
+  }
+
+  .scary-text {
+    color: #ff0000;
+    font-size: clamp(60px, 12vw, 160px);
+    font-weight: 900;
+    letter-spacing: 6px;
+    text-align: center;
+    line-height: 1.2;
+    text-shadow: 0 0 30px #ff0000, 0 0 60px #ff0000, 0 0 120px #ff0000;
+    animation: creepy 0.4s infinite;
+    user-select: none;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  @keyframes pop {
+    from { transform: scale(0.5); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+
+  @keyframes shake {
+    0%, 100% { transform: translate(0, 0); }
+    20% { transform: translate(-6px, 4px); }
+    40% { transform: translate(6px, -4px); }
+    60% { transform: translate(-4px, -6px); }
+    80% { transform: translate(4px, 6px); }
+  }
+
+  @keyframes creepy {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    25% { transform: scale(1.05) rotate(-1deg); }
+    50% { transform: scale(0.98) rotate(1deg); }
+    75% { transform: scale(1.03) rotate(-0.5deg); }
+  }
+
+  @keyframes horrorFlicker {
+    0%, 100% { background: #000; }
+    50% { background: #1a0000; }
+  }
+</style>
+</head>
+<body>
+
+  <!-- 首次弹窗：你是否姓丁 -->
+  <div class="modal-overlay" id="firstModal">
+    <div class="modal">
+      <h1>你是否姓丁</h1>
+      <div class="btn-row">
+        <button class="btn btn-yes" onclick="chooseYes()">Yes</button>
+        <button class="btn btn-no" onclick="chooseNo()">No</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- warning 弹窗 -->
+  <div class="warning-overlay" id="warningModal">
+    <div class="warning-box">
+      <div class="warning-title">⚠ WARNING ⚠</div>
+      <div class="warning-text">我欧你滴圈圈</div>
+    </div>
+  </div>
+
+  <!-- 恐怖满屏 -->
+  <div class="scary-screen" id="scaryScreen">
+    <div class="scary-text">我看见你了</div>
+  </div>
+
+<script>
+  function chooseYes() {
+    document.getElementById('firstModal').style.display = 'none';
+    document.getElementById('warningModal').style.display = 'flex';
+  }
+
+  function chooseNo() {
+    document.getElementById('firstModal').style.display = 'none';
+    document.getElementById('scaryScreen').style.display = 'flex';
+    // 满屏铺满“我看见你了”
+    const text = document.querySelector('.scary-text');
+    let html = '';
+    for (let i = 0; i < 12; i++) {
+      html += '我看见你了 ';
+    }
+    text.innerHTML = html.repeat(2);
+    // 循环变换颜色，制造恐怖闪烁
+    const colors = ['#ff0000', '#8b0000', '#ff4500', '#ff0000', '#660000'];
+    let c = 0;
+    setInterval(() => {
+      text.style.color = colors[c % colors.length];
+      c++;
+    }, 250);
+  }
+</script>
+</body>
+</html>
