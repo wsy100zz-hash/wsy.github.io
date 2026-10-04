@@ -1,1 +1,1072 @@
-敬请期待
+我打算接入 DeepSeek 和 Gemini 的，并且请完成你所说的设置功能
+1 Files Changed +383 -49
+index.html
+/workspace
++383
+-49
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AiChat · AI 对话</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%234285F4'/%3E%3Cstop offset='.5' stop-color='%239B72CB'/%3E%3Cstop offset='1' stop-color='%23D96570'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Cpath d='M16 7l2.2 6.8L25 16l-6.8 2.2L16 25l-2.2-6.8L7 16l6.8-2.2z' fill='white'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,300..600,0..1,0&display=block" rel="stylesheet">
+<style>
+/* ============ 设计令牌（Material 3 / Google 配色） ============ */
+:root{
+  --bg:#f8fafd;
+  --surface:#ffffff;
+  --surface-container:#f0f4f9;
+  --surface-container-high:#e9eef6;
+  --surface-container-highest:#dde3ea;
+  --on-surface:#1f1f1f;
+  --on-surface-variant:#444746;
+  --outline-variant:#c4c7c5;
+  --primary:#0b57d0;
+  --on-primary:#ffffff;
+  --user-bubble:#d3e3fd;
+  --on-user-bubble:#041e49;
+  --nav-active-bg:#d3e3fd;
+  --nav-active-fg:#041e49;
+  --danger:#d93025;
+  --ease:cubic-bezier(.2,0,0,1);
+  --ease-spring:cubic-bezier(.34,1.3,.5,1);
+  --shadow-1:0 1px 3px rgba(60,64,67,.18);
+  --shadow-2:0 4px 18px rgba(60,64,67,.16);
+  --toast-bg:#323639;
+  --toast-fg:#f8f9fa;
+}
+[data-theme="dark"]{
+  --bg:#131314;
+  --surface:#1e1f20;
+  --surface-container:#1e1f20;
+  --surface-container-high:#2b2c2e;
+  --surface-container-highest:#35373a;
+  --on-surface:#e3e3e3;
+  --on-surface-variant:#c4c7c5;
+  --outline-variant:#444746;
+  --primary:#a8c7fa;
+  --on-primary:#062e6f;
+  --user-bubble:#0842a0;
+  --on-user-bubble:#d3e3fd;
+  --nav-active-bg:#0842a0;
+  --nav-active-fg:#d3e3fd;
+  --shadow-1:0 1px 3px rgba(0,0,0,.4);
+  --shadow-2:0 4px 18px rgba(0,0,0,.5);
+  --toast-bg:#e3e3e3;
+  --toast-fg:#1f1f1f;
+}
+ 
+*{ box-sizing:border-box; margin:0; padding:0 }
+html{ height:100% }
+body{
+  font-family:'Roboto','PingFang SC','Microsoft YaHei',system-ui,sans-serif;
+  background:var(--bg); color:var(--on-surface);
+  height:100dvh; overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+.material-symbols-rounded{
+  font-variation-settings:'FILL' 0,'wght' 400,'GRAD' 0,'opsz' 24;
+  user-select:none; line-height:1;
+}
+button{ font-family:inherit }
+ 
+/* ============ 布局 ============ */
+.app{ display:flex; height:100dvh }
+.main{
+  flex:1; min-width:0; display:flex; flex-direction:column; position:relative;
+}
+/* 顶部柔和光晕（Gemini 风格） */
+.glow{
+  position:absolute; top:-120px; left:50%; transform:translateX(-50%);
+  width:min(900px,110vw); height:480px; pointer-events:none; z-index:0;
+  background:radial-gradient(closest-side, rgba(11,87,208,.07), transparent 70%);
+}
+[data-theme="dark"] .glow{ background:radial-gradient(closest-side, rgba(168,199,250,.05), transparent 70%) }
+ 
+/* ============ 侧边栏 ============ */
+.sidebar{
+  width:288px; flex-shrink:0; background:var(--surface-container);
+  display:flex; flex-direction:column; padding:14px 12px;
+  transition:margin-left .32s var(--ease), transform .32s var(--ease), background-color .25s;
+  z-index:70;
+}
+.sidebar.collapsed{ margin-left:-288px }
+.sb-head{ padding:6px 10px 14px }
+.brand{ display:flex; align-items:center; gap:10px; font-size:19px; font-weight:500; color:var(--on-surface); letter-spacing:.2px }
+.brand-mark{
+  font-family:'Material Symbols Rounded'; font-size:22px;
+  background:linear-gradient(135deg,#4285F4,#9B72CB 55%,#D96570);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.new-chat{
+  display:flex; align-items:center; gap:10px; width:100%;
+  padding:10px 16px; margin:2px 0 10px;
+  background:var(--surface); color:var(--on-surface);
+  border:1px solid var(--outline-variant); border-radius:999px;
+  font-size:14px; font-weight:500; cursor:pointer;
+  transition:box-shadow .2s var(--ease), background-color .25s, border-color .2s;
+  position:relative; overflow:hidden;
+}
+.new-chat:hover{ box-shadow:var(--shadow-1); border-color:color-mix(in srgb, var(--primary) 40%, transparent) }
+.new-chat .material-symbols-rounded{ font-size:20px }
+.sb-label{ font-size:12px; font-weight:500; color:var(--on-surface-variant); padding:6px 14px; letter-spacing:.3px }
+.chat-list{ flex:1; overflow-y:auto; padding-bottom:8px }
+.chat-list::-webkit-scrollbar{ width:6px }
+.chat-list::-webkit-scrollbar-thumb{ background:color-mix(in srgb, var(--on-surface) 18%, transparent); border-radius:99px }
+.chat-item{
+  display:flex; align-items:center; gap:10px;
+  margin:2px 6px; padding:9px 12px; border-radius:999px;
+  font-size:14px; color:var(--on-surface); cursor:pointer;
+  transition:background-color .2s;
+}
+.chat-item:hover{ background:color-mix(in srgb, var(--on-surface) 6%, transparent) }
+.chat-item.active{ background:var(--nav-active-bg); color:var(--nav-active-fg); font-weight:500 }
+.chat-item.active .ci-ico, .chat-item.active .ci-del{ color:var(--nav-active-fg) }
+.ci-ico{ font-size:18px; color:var(--on-surface-variant); flex-shrink:0 }
+.ci-title{ flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.ci-del{
+  border:none; background:transparent; color:var(--on-surface-variant);
+  width:26px; height:26px; border-radius:50%; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; transition:opacity .15s, background-color .2s; flex-shrink:0;
+}
+.chat-item:hover .ci-del{ opacity:.85 }
+.ci-del:hover{ background:color-mix(in srgb, var(--danger) 14%, transparent); color:var(--danger) }
+.ci-del .material-symbols-rounded{ font-size:16px }
+@media (hover:none){ .ci-del{ opacity:.6 } }
+.sb-empty{ font-size:13px; color:var(--on-surface-variant); padding:10px 16px }
+.sb-foot{ border-top:1px solid var(--outline-variant); padding-top:8px; margin-top:4px }
+.sb-foot-item{
+  display:flex; align-items:center; gap:10px; width:100%;
+  padding:9px 14px; border:none; border-radius:999px;
+  background:transparent; color:var(--on-surface-variant);
+  font-size:13px; cursor:pointer; transition:background-color .2s;
+}
+.sb-foot-item:hover{ background:color-mix(in srgb, var(--on-surface) 6%, transparent) }
+.sb-foot-item .material-symbols-rounded{ font-size:18px }
+ 
+/* ============ 顶栏 ============ */
+.topbar{
+  display:flex; align-items:center; gap:6px;
+  height:64px; padding:0 12px 0 8px; flex-shrink:0; z-index:10;
+  transition:background-color .25s;
+}
+.icon-btn{
+  width:42px; height:42px; border-radius:50%; border:none;
+  background:transparent; color:var(--on-surface-variant);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; flex-shrink:0; position:relative; overflow:hidden;
+  transition:background-color .2s, color .25s;
+}
+.icon-btn:hover{ background:color-mix(in srgb, var(--on-surface) 7%, transparent) }
+.icon-btn .material-symbols-rounded{ font-size:22px }
+.brand-mini{ display:none; font-size:17px; font-weight:500; margin:0 2px 0 6px }
+.grow{ flex:1 }
+ 
+/* 模型选择器 */
+.model-select{ position:relative }
+.model-btn{
+  display:flex; align-items:center; gap:9px;
+  height:38px; padding:0 12px; border:none; border-radius:999px;
+  background:transparent; color:var(--on-surface);
+  font-size:15px; font-weight:500; cursor:pointer;
+  transition:background-color .2s; position:relative; overflow:hidden;
+}
+.model-btn:hover{ background:color-mix(in srgb, var(--on-surface) 6%, transparent) }
+.model-dot{ width:9px; height:9px; border-radius:50%; background:var(--primary); flex-shrink:0; transition:background-color .3s }
+.model-btn .chev{ font-size:20px; transition:transform .25s var(--ease) }
+.model-select.open .chev{ transform:rotate(180deg) }
+.model-menu{
+  position:absolute; top:calc(100% + 6px); left:0; width:352px; max-width:calc(100vw - 24px);
+  max-height:min(430px, 70vh); overflow-y:auto;
+  background:var(--surface); border-radius:16px; box-shadow:var(--shadow-2);
+  padding:8px; z-index:80;
+  opacity:0; transform:translateY(-8px) scale(.97); transform-origin:top left;
+  pointer-events:none;
+  transition:opacity .18s var(--ease), transform .18s var(--ease), background-color .25s;
+}
+.model-menu::-webkit-scrollbar{ width:6px }
+.model-menu::-webkit-scrollbar-thumb{ background:color-mix(in srgb, var(--on-surface) 18%, transparent); border-radius:99px }
+.model-select.open .model-menu{ opacity:1; transform:none; pointer-events:auto }
+.mm-label{ font-size:11.5px; font-weight:500; color:var(--on-surface-variant); padding:8px 12px 6px; letter-spacing:.4px }
+.model-item{
+  display:flex; align-items:center; gap:12px; padding:10px 12px;
+  border-radius:12px; cursor:pointer; position:relative; overflow:hidden;
+  transition:background-color .18s;
+}
+.model-item:hover{ background:color-mix(in srgb, var(--on-surface) 6%, transparent) }
+.model-item.active{ background:color-mix(in srgb, var(--primary) 9%, transparent) }
+.mi-dot{ width:10px; height:10px; border-radius:50%; flex-shrink:0 }
+.mi-main{ flex:1; min-width:0 }
+.mi-name{ font-size:14px; font-weight:500; display:flex; align-items:center; gap:7px }
+.mi-badge{
+  font-size:9.5px; font-weight:700; letter-spacing:.6px;
+  padding:2px 7px; border-radius:999px;
+}
+.mi-desc{ font-size:12px; color:var(--on-surface-variant); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis }
+.mi-right{ display:flex; align-items:center; gap:6px; flex-shrink:0 }
+.mi-ctx{ font-size:11px; color:var(--on-surface-variant) }
+.mi-check{ font-size:18px; color:var(--primary); opacity:0; transform:scale(.5); transition:.2s var(--ease-spring) }
+.model-item.active .mi-check{ opacity:1; transform:none }
+ 
+/* 会话统计胶囊 */
+.stats-chip{
+  display:flex; align-items:center; gap:6px;
+  height:34px; padding:0 14px; border-radius:999px;
+  border:1px solid var(--outline-variant);
+  background:transparent; color:var(--on-surface-variant);
+  font-size:13px; font-weight:500; cursor:default;
+  transition:background-color .2s, border-color .3s, color .25s;
+}
+.stats-chip:hover{ background:color-mix(in srgb, var(--on-surface) 5%, transparent) }
+.stats-chip .material-symbols-rounded{ font-size:16px; color:var(--primary) }
+.stats-sep{ width:1px; height:14px; background:var(--outline-variant); margin:0 2px }
+.stats-chip.bump{ animation:bump .35s var(--ease-spring) }
+@keyframes bump{ 40%{ transform:scale(1.07); border-color:var(--primary) } }
+ 
+/* ============ 对话区 ============ */
+.chat-scroll{ flex:1; overflow-y:auto; position:relative; z-index:1 }
+.chat-scroll::-webkit-scrollbar{ width:10px }
+.chat-scroll::-webkit-scrollbar-thumb{ background:color-mix(in srgb, var(--on-surface) 16%, transparent); border-radius:99px; border:3px solid transparent; background-clip:content-box }
+.chat-col{
+  max-width:800px; margin:0 auto; padding:12px 20px 28px;
+  display:flex; flex-direction:column; gap:22px;
+}
+ 
+/* 用户消息 */
+.msg{ animation:msgIn .38s var(--ease) both }
+@keyframes msgIn{ from{ opacity:0; transform:translateY(14px) } }
+.msg.user{ display:flex; flex-direction:column; align-items:flex-end }
+.bubble{
+  background:var(--user-bubble); color:var(--on-user-bubble);
+  padding:11px 17px; border-radius:20px; max-width:78%;
+  white-space:pre-wrap; word-break:break-word;
+  font-size:15px; line-height:1.65;
+  transition:background-color .25s;
+}
+.user-meta{
+  margin-top:5px; padding-right:6px;
+  font-size:11.5px; color:var(--on-surface-variant); opacity:.8;
+  display:flex; align-items:center; gap:4px;
+}
+.user-meta .material-symbols-rounded{ font-size:13px }
+ 
+/* AI 消息 */
+.msg.ai{ display:flex; gap:14px }
+.avatar{
+  width:32px; height:32px; border-radius:50%; flex-shrink:0; margin-top:2px;
+  background:linear-gradient(135deg,#4285F4,#9B72CB 55%,#D96570);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 1px 4px rgba(66,133,244,.3);
+}
+.avatar .material-symbols-rounded{ font-size:17px; color:#fff; font-variation-settings:'FILL' 1,'wght' 500 }
+.ai-content{ flex:1; min-width:0 }
+ 
+/* Markdown 渲染 */
+.md-body{ font-size:15px; line-height:1.75; overflow-wrap:break-word }
+.md-body p{ margin:.45em 0 }
+.md-body p:first-child{ margin-top:0 }
+.md-body p:last-child{ margin-bottom:0 }
+.md-body ul{ margin:.45em 0; padding-left:1.35em }
+.md-body li{ margin:.28em 0 }
+.md-body strong{ font-weight:600 }
+.md-body em{ color:var(--on-surface-variant) }
+.ic{
+  font-family:'Roboto Mono',monospace; font-size:13.5px;
+  background:var(--surface-container-high); padding:1px 6px; border-radius:6px;
+  transition:background-color .25s;
+}
+.codeblock{
+  margin:.85em 0; border-radius:12px; overflow:hidden;
+  border:1px solid var(--outline-variant); background:var(--surface-container);
+  transition:border-color .25s;
+}
+.cb-head{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:6px 8px 6px 14px; background:var(--surface-container-high);
+  font-family:'Roboto Mono',monospace; font-size:12px; color:var(--on-surface-variant);
+  transition:background-color .25s;
+}
+.cb-copy{
+  display:flex; align-items:center; gap:5px;
+  border:none; background:transparent; color:var(--on-surface-variant);
+  font-size:12px; padding:5px 11px; border-radius:999px; cursor:pointer;
+  transition:background-color .2s, color .2s;
+}
+.cb-copy:hover{ background:color-mix(in srgb, var(--on-surface) 8%, transparent) }
+.cb-copy .material-symbols-rounded{ font-size:14px }
+.cb-copy.ok{ color:#1e8e3e }
+pre{
+  margin:0; padding:14px 16px; overflow-x:auto;
+  font-family:'Roboto Mono',monospace; font-size:13px; line-height:1.65; tab-size:2;
+  transition:background-color .25s;
+}
+/* 流式输出光标 */
+.md-body.streaming > :last-child::after{
+  content:''; display:inline-block; width:9px; height:15px;
+  border-radius:2px; background:var(--primary); margin-left:3px; vertical-align:-2px;
+  animation:blink .85s steps(2,start) infinite;
+}
+@keyframes blink{ to{ visibility:hidden } }
+ 
+/* 打字指示器 */
+.dots{ display:flex; gap:5px; padding:9px 0 }
+.dots span{
+  width:7px; height:7px; border-radius:50%; background:var(--on-surface-variant);
+  animation:dotBounce 1.2s infinite ease-in-out;
+}
+.dots span:nth-child(2){ animation-delay:.15s }
+.dots span:nth-child(3){ animation-delay:.3s }
+@keyframes dotBounce{ 0%,60%,100%{ transform:translateY(0); opacity:.45 } 30%{ transform:translateY(-5px); opacity:1 } }
+ 
+/* 消息统计与操作 */
+.msg-footer{ display:flex; align-items:center; gap:8px; margin-top:10px; flex-wrap:wrap }
+.chip{
+  display:inline-flex; align-items:center; gap:5px;
+  height:27px; padding:0 11px; border-radius:999px;
+  background:var(--surface-container-high); color:var(--on-surface-variant);
+  font-size:12px; font-weight:500; white-space:nowrap;
+  transition:background-color .25s;
+}
+.chip .material-symbols-rounded{ font-size:14px }
+.chip .dotmark{ width:7px; height:7px; border-radius:50% }
+.chip.warn{ background:color-mix(in srgb, var(--danger) 12%, transparent); color:var(--danger) }
+.spinner{
+  width:12px; height:12px; border-radius:50%;
+  border:2px solid color-mix(in srgb, var(--primary) 28%, transparent);
+  border-top-color:var(--primary);
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{ to{ transform:rotate(360deg) } }
+.actions{ display:flex; gap:2px; opacity:0; transform:translateY(3px); transition:.22s var(--ease) }
+.msg.ai:hover .actions, .msg.ai:focus-within .actions{ opacity:1; transform:none }
+@media (hover:none){ .actions{ opacity:1; transform:none } }
+.act{
+  width:30px; height:30px; border-radius:50%; border:none;
+  background:transparent; color:var(--on-surface-variant);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  position:relative; overflow:hidden;
+  transition:background-color .2s, color .2s;
+}
+.act:hover{ background:color-mix(in srgb, var(--on-surface) 8%, transparent) }
+.act .material-symbols-rounded{ font-size:16px }
+.act.on{ color:var(--primary) }
+.act.on .material-symbols-rounded{ font-variation-settings:'FILL' 1,'wght' 500 }
+ 
+/* ============ 欢迎页 ============ */
+.welcome{
+  display:flex; flex-direction:column; align-items:center;
+  text-align:center; padding:52px 8px 24px;
+  animation:fadeUp .5s var(--ease) both;
+}
+@keyframes fadeUp{ from{ opacity:0; transform:translateY(16px) } }
+.hello{
+  font-size:clamp(30px,4.5vw,44px); font-weight:300;
+  letter-spacing:.5px; line-height:1.3; margin-bottom:32px;
+  background:linear-gradient(92deg,#4285F4 8%,#9B72CB 55%,#D96570 92%);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.hello span{ display:block }
+.suggest-grid{
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px; width:100%; max-width:640px;
+}
+.suggest-card{
+  text-align:left; padding:15px 16px; border-radius:16px;
+  background:var(--surface); border:1px solid var(--outline-variant);
+  display:flex; flex-direction:column; gap:11px; cursor:pointer;
+  position:relative; overflow:hidden;
+  transition:transform .22s var(--ease), box-shadow .22s var(--ease), border-color .22s, background-color .25s;
+  animation:cardIn .5s var(--ease) backwards;
+}
+.suggest-card:nth-child(1){ animation-delay:.06s }
+.suggest-card:nth-child(2){ animation-delay:.12s }
+.suggest-card:nth-child(3){ animation-delay:.18s }
+.suggest-card:nth-child(4){ animation-delay:.24s }
+@keyframes cardIn{ from{ opacity:0; transform:translateY(12px) scale(.98) } }
+.suggest-card:hover{
+  transform:translateY(-3px);
+  box-shadow:0 5px 16px rgba(60,64,67,.12);
+  border-color:color-mix(in srgb, var(--primary) 45%, transparent);
+}
+.sc-ico{
+  width:32px; height:32px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  color:var(--primary); background:color-mix(in srgb, var(--primary) 10%, transparent);
+}
+.sc-ico .material-symbols-rounded{ font-size:18px }
+.sc-text{ font-size:13.5px; color:var(--on-surface-variant); line-height:1.55 }
+.demo-note{ margin-top:22px; font-size:12px; color:var(--on-surface-variant); opacity:.75 }
+ 
+/* ============ 输入区 ============ */
+.composer{ padding:4px 16px calc(12px + env(safe-area-inset-bottom)); flex-shrink:0; z-index:5 }
+.composer-inner{ max-width:800px; margin:0 auto }
+.input-pill{
+  display:flex; align-items:flex-end; gap:2px;
+  background:var(--surface-container); border-radius:28px;
+  padding:6px 6px 6px 8px; border:1px solid transparent;
+  transition:border-color .2s, box-shadow .2s, background-color .25s;
+}
+.input-pill:focus-within{
+  border-color:color-mix(in srgb, var(--primary) 38%, transparent);
+  box-shadow:0 2px 12px rgba(11,87,208,.09);
+}
+#input{
+  flex:1; border:none; outline:none; background:transparent; resize:none;
+  font:inherit; font-size:15.5px; line-height:1.5;
+  padding:12px 6px; max-height:180px; color:var(--on-surface);
+}
+#input::placeholder{ color:color-mix(in srgb, var(--on-surface) 42%, transparent) }
+.send-btn{
+  width:42px; height:42px; border-radius:50%; border:none; flex-shrink:0;
+  background:var(--primary); color:var(--on-primary);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  position:relative; overflow:hidden; align-self:flex-end;
+  transition:transform .16s var(--ease), opacity .2s, background-color .25s;
+}
+.send-btn:not(:disabled):hover{ transform:scale(1.06) }
+.send-btn:not(:disabled):active{ transform:scale(.94) }
+.send-btn:disabled{ opacity:.4; cursor:default }
+.send-btn .material-symbols-rounded{ font-size:21px; font-variation-settings:'FILL' 1,'wght' 500 }
+.send-btn.stop{ animation:pulse 1.5s infinite }
+@keyframes pulse{
+  0%{ box-shadow:0 0 0 0 color-mix(in srgb, var(--primary) 45%, transparent) }
+  70%{ box-shadow:0 0 0 11px transparent }
+  100%{ box-shadow:0 0 0 0 transparent }
+}
+.send-btn .material-symbols-rounded.pop{ animation:pop .26s var(--ease-spring) }
+@keyframes pop{ from{ transform:scale(.4); opacity:0 } }
+.hint{
+  text-align:center; font-size:11.5px; color:var(--on-surface-variant);
+  margin-top:10px; opacity:.85;
+}
+ 
+/* 回到底部悬浮按钮 */
+.fab-anchor{
+  position:sticky; bottom:14px; height:0;
+  display:flex; justify-content:center; pointer-events:none;
+}
+.scroll-fab{
+  pointer-events:auto; width:40px; height:40px; border-radius:50%;
+  border:none; background:var(--surface-container-high); color:var(--on-surface-variant);
+  box-shadow:var(--shadow-2); display:flex; align-items:center; justify-content:center;
+  cursor:pointer; position:relative; overflow:hidden;
+  opacity:0; transform:translateY(12px) scale(.85);
+  transition:opacity .25s var(--ease), transform .25s var(--ease), background-color .25s;
+}
+.scroll-fab.show{ opacity:1; transform:none }
+.scroll-fab .material-symbols-rounded{ font-size:20px }
+ 
+/* ============ Toast ============ */
+.toast{
+  position:fixed; left:50%; bottom:30px; z-index:100;
+  transform:translate(-50%, 18px);
+  background:var(--toast-bg); color:var(--toast-fg);
+  padding:11px 20px; border-radius:10px; font-size:13.5px;
+  opacity:0; pointer-events:none;
+  transition:opacity .22s var(--ease), transform .22s var(--ease);
+  box-shadow:var(--shadow-2); max-width:80vw;
+}
+.toast.show{ opacity:1; transform:translate(-50%, 0) }
+ 
+/* ============ Ripple ============ */
+.ripple{
+  position:absolute; border-radius:50%; background:currentColor;
+  opacity:.14; transform:scale(0); pointer-events:none;
+  animation:rippleAnim .55s var(--ease) forwards;
+}
+@keyframes rippleAnim{ to{ transform:scale(1); opacity:0 } }
+ 
+/* ============ 错误提示框 ============ */
+.err-box{
+  display:flex; gap:10px; align-items:flex-start;
+  padding:12px 14px; border-radius:12px;
+  background:color-mix(in srgb, var(--danger) 8%, transparent);
+  color:var(--danger); font-size:14px; line-height:1.55;
+}
+.err-box .material-symbols-rounded{ font-size:20px; flex-shrink:0; margin-top:1px }
+.err-act{
+  margin-top:8px; border:none; background:transparent; padding:0;
+  color:var(--danger); font-size:13px; font-weight:500;
+  cursor:pointer; text-decoration:underline;
+}
+.mm-group{ display:flex; align-items:center; justify-content:space-between; padding:10px 12px 4px }
+.mm-group-name{ font-size:11.5px; font-weight:500; color:var(--on-surface-variant); letter-spacing:.4px }
+.mm-key-state{ display:inline-flex; align-items:center; gap:5px; font-size:11px; color:var(--on-surface-variant) }
+.mm-kdot{ width:6px; height:6px; border-radius:50%; background:var(--outline-variant); transition:background-color .3s }
+.mm-key-state.ok{ color:#1e8e3e }
+.mm-key-state.ok .mm-kdot{ background:#1e8e3e }
+.mi-api{ font-family:'Roboto Mono',monospace; font-size:11px; opacity:.75 }
+ 
+/* ============ 设置对话框 ============ */
+.dlg-scrim{
+  position:fixed; inset:0; z-index:90; background:rgba(0,0,0,.42);
+  display:flex; align-items:center; justify-content:center; padding:20px;
+  opacity:0; pointer-events:none; transition:opacity .22s var(--ease);
+}
+.dlg-scrim.show{ opacity:1; pointer-events:auto }
+.dlg{
+  width:min(560px, 100%); max-height:min(86dvh, 720px);
+  display:flex; flex-direction:column;
+  background:var(--surface); border-radius:28px; box-shadow:var(--shadow-2);
+  transform:scale(.92) translateY(12px);
+  transition:transform .28s var(--ease-spring), background-color .25s;
+  overflow:hidden;
+}
+.dlg-scrim.show .dlg{ transform:none }
+.dlg-head{ padding:24px 24px 10px }
+.dlg-title-row{ display:flex; align-items:center; gap:10px; margin-bottom:10px }
+.dlg-title-row .material-symbols-rounded{ color:var(--primary); font-size:24px }
+.dlg h2{ font-size:22px; font-weight:400; letter-spacing:.2px }
+.dlg-sub{ font-size:13px; color:var(--on-surface-variant); line-height:1.6 }
+.dlg-body{ padding:6px 24px; overflow-y:auto; display:flex; flex-direction:column; gap:22px }
+.dlg-body::-webkit-scrollbar{ width:6px }
+.dlg-body::-webkit-scrollbar-thumb{ background:color-mix(in srgb, var(--on-surface) 18%, transparent); border-radius:99px }
+.prov{ display:flex; flex-direction:column; gap:12px }
+.prov-head{ display:flex; align-items:center; gap:8px }
+.prov-dot{ width:8px; height:8px; border-radius:50%; background:var(--outline-variant); flex-shrink:0; transition:background-color .3s }
+.prov-dot.ok{ background:#1e8e3e }
+.prov-name{ font-weight:500; font-size:14px; flex:1 }
+.prov-link{
+  font-size:12.5px; color:var(--primary); text-decoration:none;
+  display:inline-flex; align-items:center; gap:2px;
+}
+.prov-link:hover{ text-decoration:underline }
+.prov-link .material-symbols-rounded{ font-size:14px }
+.field{ position:relative }
+.field input{
+  width:100%; box-sizing:border-box; padding:15px 14px;
+  font:inherit; font-size:13.5px; font-family:'Roboto Mono',monospace;
+  color:var(--on-surface); background:transparent;
+  border:1px solid var(--outline-variant); border-radius:12px;
+  outline:none; transition:border-color .2s, box-shadow .2s;
+}
+.field.has-eye input{ padding-right:46px }
+.field input:focus{ border-color:var(--primary); box-shadow:0 0 0 1px var(--primary) }
+.field label{
+  position:absolute; left:12px; top:-7px; padding:0 5px;
+  font-size:12px; color:var(--on-surface-variant);
+  background:var(--surface); pointer-events:none; transition:background-color .25s;
+}
+.eye{
+  position:absolute; right:7px; top:50%; transform:translateY(-50%);
+  width:32px; height:32px; border-radius:50%; border:none;
+  background:transparent; color:var(--on-surface-variant);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  transition:background-color .2s;
+}
+.eye:hover{ background:color-mix(in srgb, var(--on-surface) 8%, transparent) }
+.eye .material-symbols-rounded{ font-size:18px }
+.dlg-foot{ display:flex; justify-content:flex-end; gap:8px; padding:16px 24px 20px }
+.btn-text{
+  height:40px; padding:0 20px; border-radius:999px; border:none;
+  background:transparent; color:var(--primary);
+  font-size:14px; font-weight:500; cursor:pointer;
+  position:relative; overflow:hidden; transition:background-color .2s;
+}
+.btn-text:hover{ background:color-mix(in srgb, var(--primary) 8%, transparent) }
+.btn-filled{
+  height:40px; padding:0 24px; border-radius:999px; border:none;
+  background:var(--primary); color:var(--on-primary);
+  font-size:14px; font-weight:500; cursor:pointer;
+  position:relative; overflow:hidden;
+  transition:box-shadow .2s, transform .15s var(--ease);
+}
+.btn-filled:hover{ box-shadow:var(--shadow-1); transform:translateY(-1px) }
+.btn-filled:active{ transform:scale(.97) }
+ 
+/* ============ 遮罩与响应式 ============ */
+.scrim{
+  position:fixed; inset:0; background:rgba(0,0,0,.42);
+40 lines hidden
+    <div class="sb-label">最近对话</div>
+    <nav class="chat-list" id="chatList"></nav>
+    <div class="sb-foot">
+      <button class="sb-foot-item" id="settingsBtn">
+        <span class="material-symbols-rounded">settings</span><span>设置</span>
+      </button>
+      <button class="sb-foot-item" id="clearAllBtn">
+        <span class="material-symbols-rounded">delete_sweep</span><span>清除全部对话</span>
+      </button>
+36 lines hidden
+          <button class="icon-btn" id="micBtn" aria-label="语音输入（演示）"><span class="material-symbols-rounded">mic</span></button>
+          <button class="send-btn" id="sendBtn" aria-label="发送"><span class="material-symbols-rounded" id="sendIcon">arrow_upward</span></button>
+        </div>
+        <div class="hint">AiChat 可能会显示不准确的信息，包括关于人物、地点的事实，请自行核实。演示环境：回复由本地模拟生成。</div>
+        <div class="hint">AiChat 可能会显示不准确的信息，请自行核实。在「设置」中填写 API Key 后调用真实模型；未配置时以本地演示模式回复。</div>
+      </div>
+    </footer>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+<!-- 设置对话框 -->
+<div class="dlg-scrim" id="settingsDlg">
+  <div class="dlg" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">
+    <div class="dlg-head">
+      <div class="dlg-title-row">
+        <span class="material-symbols-rounded">settings</span>
+        <h2 id="dlgTitle">设置</h2>
+      </div>
+      <p class="dlg-sub">API Key 仅保存在本地浏览器（localStorage）中，请求由浏览器直接发送至官方接口，不经过任何中间服务器。未配置 Key 的厂商将以本地演示模式回复。</p>
+    </div>
+    <div class="dlg-body">
+      <section class="prov">
+        <div class="prov-head">
+          <span class="prov-dot" id="dot-google"></span>
+          <span class="prov-name">Google Gemini</span>
+          <a class="prov-link" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">获取 Key <span class="material-symbols-rounded">open_in_new</span></a>
+        </div>
+        <div class="field has-eye">
+          <label for="key-google">Gemini API Key</label>
+          <input id="key-google" type="password" placeholder="AIza…" autocomplete="off" spellcheck="false">
+          <button class="eye" data-eye="key-google" type="button" aria-label="显示或隐藏 Key"><span class="material-symbols-rounded">visibility</span></button>
+        </div>
+        <div class="field">
+          <label for="url-google">接口地址（可选，默认官方）</label>
+          <input id="url-google" type="text" placeholder="https://generativelanguage.googleapis.com" autocomplete="off" spellcheck="false">
+        </div>
+      </section>
+      <section class="prov">
+        <div class="prov-head">
+          <span class="prov-dot" id="dot-deepseek"></span>
+          <span class="prov-name">DeepSeek</span>
+          <a class="prov-link" href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener">获取 Key <span class="material-symbols-rounded">open_in_new</span></a>
+        </div>
+        <div class="field has-eye">
+          <label for="key-deepseek">DeepSeek API Key</label>
+          <input id="key-deepseek" type="password" placeholder="sk-…" autocomplete="off" spellcheck="false">
+          <button class="eye" data-eye="key-deepseek" type="button" aria-label="显示或隐藏 Key"><span class="material-symbols-rounded">visibility</span></button>
+        </div>
+        <div class="field">
+          <label for="url-deepseek">接口地址（可选，默认官方）</label>
+          <input id="url-deepseek" type="text" placeholder="https://api.deepseek.com" autocomplete="off" spellcheck="false">
+        </div>
+      </section>
+    </div>
+    <div class="dlg-foot">
+      <button class="btn-text" id="dlgCancel" type="button">取消</button>
+      <button class="btn-filled" id="dlgSave" type="button">保存</button>
+    </div>
+  </div>
+</div>
+<script>
+/* ============ 1. 模型与配置 ============ */
+const PROVIDERS = {
+  google: {
+    id: 'google', name: 'Google Gemini',
+    defaultBaseUrl: 'https://generativelanguage.googleapis.com',
+    keyUrl: 'https://aistudio.google.com/app/apikey',
+    keyHint: 'AIza…',
+  },
+  deepseek: {
+    id: 'deepseek', name: 'DeepSeek',
+    defaultBaseUrl: 'https://api.deepseek.com',
+    keyUrl: 'https://platform.deepseek.com/api_keys',
+    keyHint: 'sk-…',
+  },
+};
+const MODELS = [
+  { id:'gemini-2.5-pro',   name:'Gemini 2.5 Pro',    vendor:'Google',    badge:'PRO',  accent:'#a142f4', desc:'最强推理与长上下文，适合复杂任务', context:'1M',   voice:'深入、结构化', tier:'pro',  speed:0.55, ttft:[700,1500], pricing:{input:1.25, output:10} },
+  { id:'gemini-2.5-flash', name:'Gemini 2.5 Flash',  vendor:'Google',    badge:'FLASH',accent:'#1e8e3e', desc:'极速响应，日常对话的高性价比之选', context:'1M',   voice:'简洁明快',   tier:'fast', speed:1.7,  ttft:[220,550],  pricing:{input:0.30, output:2.5} },
+  { id:'gpt-4o',           name:'GPT-4o',            vendor:'OpenAI',    badge:'4O',   accent:'#0fa37f', desc:'多模态旗舰，综合能力均衡',         context:'128K', voice:'均衡、自然', tier:'mid',  speed:1.0,  ttft:[550,1200], pricing:{input:2.50, output:10} },
+  { id:'gpt-4o-mini',      name:'GPT-4o mini',       vendor:'OpenAI',    badge:'MINI', accent:'#54b799', desc:'轻量快速，适合高频轻任务',         context:'128K', voice:'简洁',       tier:'fast', speed:1.9,  ttft:[280,650],  pricing:{input:0.15, output:0.6} },
+  { id:'claude-3.5-sonnet',name:'Claude 3.5 Sonnet', vendor:'Anthropic', badge:'S',    accent:'#d97757', desc:'长文本写作与代码见长',             context:'200K', voice:'细腻、有文采', tier:'mid', speed:1.1, ttft:[500,1100], pricing:{input:3.00, output:15} },
+  { id:'deepseek-v3',      name:'DeepSeek-V3',       vendor:'DeepSeek',  badge:'V3',   accent:'#4d6bfe', desc:'开源旗舰，推理与代码能力强',       context:'64K',  voice:'直接、务实', tier:'mid',  speed:0.9,  ttft:[650,1400], pricing:{input:0.27, output:1.1} },
+  { id:'gemini-2.5-pro',   provider:'google',   apiModel:'gemini-2.5-pro',   name:'Gemini 2.5 Pro',  badge:'PRO',  accent:'#a142f4', desc:'复杂推理与长上下文任务',     context:'1M',  voice:'深入、结构化', tier:'pro',  speed:0.55, ttft:[700,1500],  pricing:{input:1.25, output:10} },
+  { id:'gemini-2.5-flash', provider:'google',   apiModel:'gemini-2.5-flash', name:'Gemini 2.5 Flash',badge:'FLASH',accent:'#1e8e3e', desc:'极速响应的日常之选',         context:'1M',  voice:'简洁明快',   tier:'fast', speed:1.7,  ttft:[220,550],   pricing:{input:0.30, output:2.50} },
+  { id:'deepseek-chat',    provider:'deepseek', apiModel:'deepseek-chat',    name:'DeepSeek-V3',     badge:'V3',   accent:'#4d6bfe', desc:'开源旗舰，均衡实惠',         context:'64K', voice:'直接、务实', tier:'mid',  speed:0.95, ttft:[500,1100],  pricing:{input:0.28, output:0.42} },
+  { id:'deepseek-reasoner',provider:'deepseek', apiModel:'deepseek-reasoner',name:'DeepSeek-R1',     badge:'R1',   accent:'#1f4fd8', desc:'深度推理链模型',             context:'64K', voice:'缜密、逐步', tier:'pro',  speed:0.4,  ttft:[1500,3200],pricing:{input:0.55, output:2.21} },
+];
+const SUGGESTIONS = [
+  { icon:'map',     text:'帮我制定一份三天的东京旅行计划' },
+129 lines hidden
+    + '今天想从什么开始？';
+}
+function replyWhoami(model){
+  return '我是 **' + model.name + '**，由 ' + model.vendor + ' 训练的大语言模型，当前运行在 AiChat 演示环境中。\n\n'
+  return '我是 **' + model.name + '**（接口标识 `' + model.apiModel + '`），由 ' + PROVIDERS[model.provider].name + ' 提供的大语言模型。\n\n'
+    + '我的一些基本参数：\n\n'
+    + '- 上下文窗口：**' + model.context + ' tokens**\n'
+    + '- 响应风格：**' + model.voice + '**\n'
+    + '- 计费单价：输入 **$' + model.pricing.input + '/百万 tokens** · 输出 **$' + model.pricing.output + '/百万 tokens**\n\n'
+    + '需要说明：这个演示里的回复由本地脚本模拟生成，主要用于展示模型切换、token 统计与响应时间这些交互能力。接入真实模型时，只需替换 `generate()` 中的请求逻辑即可。';
+    + '当前这条回复来自**本地演示模式**——因为我还没有被配置 API Key。在左侧「设置」中填写 ' + PROVIDERS[model.provider].name + ' 的 Key 后，我就会调用真实接口，token 统计也将来自接口返回的真实用量。';
+}
+function replyCode(prompt, model){
+  const isDebounce = /防抖|debounce/i.test(prompt);
+88 lines hidden
+  activeId: null,
+  generating: false,
+  abortFlag: false,
+  keys: { google: '', deepseek: '' },
+  baseUrls: { google: '', deepseek: '' },
+};
+const hasKey = pid => !!(state.keys[pid] && state.keys[pid].trim());
+function save(){
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify({
+2 lines hidden
+      modelId: state.modelId,
+      chats: state.chats,
+      activeId: state.activeId,
+      keys: state.keys,
+      baseUrls: state.baseUrls,
+    }));
+  } catch {}
+}
+7 lines hidden
+      if (d.modelId && getModel(d.modelId)) state.modelId = d.modelId;
+      if (Array.isArray(d.chats)) state.chats = d.chats;
+      state.activeId = d.activeId;
+      if (d.keys) state.keys = { google: d.keys.google || '', deepseek: d.keys.deepseek || '' };
+      if (d.baseUrls) state.baseUrls = { google: d.baseUrls.google || '', deepseek: d.baseUrls.deepseek || '' };
+    }
+  } catch {}
+  if (!state.theme){
+42 lines hidden
+    '<div class="welcome">'
+    + '<h1 class="hello"><span>你好。</span><span>今天我能帮你做些什么？</span></h1>'
+    + '<div class="suggest-grid">' + cards + '</div>'
+    + '<p class="demo-note">演示环境 · 回复由本地模拟生成，切换模型可体验不同速度与风格</p>'
+    + '<p class="demo-note">在左侧「设置」中填写 API Key 即可调用真实模型 · 未配置时以演示模式回复</p>'
+    + '</div>';
+}
+ 
+9 lines hidden
+    + '<span class="chip" title="输入 ' + fmtNum(st.promptTokens) + ' · 输出 ' + fmtNum(st.completionTokens) + '"><span class="material-symbols-rounded">toll</span>' + fmtNum(st.promptTokens + st.completionTokens) + ' tokens</span>'
+    + '<span class="chip" title="按 ' + model.name + ' 定价估算"><span class="material-symbols-rounded">payments</span>' + fmtCost(st.cost) + '</span>';
+  if (st.aborted) html += '<span class="chip warn"><span class="material-symbols-rounded">block</span>已停止</span>';
+  if (st.error) html += '<span class="chip warn" title="' + escapeHtml(st.error) + '"><span class="material-symbols-rounded">error</span>请求失败</span>';
+  else if (st.mode === 'demo') html += '<span class="chip" title="未配置 API Key，本地演示回复"><span class="material-symbols-rounded">science</span>演示</span>';
+  return html;
+}
+ 
+function renderAiBody(msg){
+  if (msg.stats && msg.stats.error && !msg.content){
+    return '<div class="err-box"><span class="material-symbols-rounded">error</span><div>'
+      + '<div>' + escapeHtml(msg.stats.error) + '</div>'
+      + '<button class="err-act">打开设置检查 API Key</button>'
+      + '</div></div>';
+  }
+  return mdToHtml(msg.content);
+}
+ 
+function appendMessageEl(msg){
+  const div = document.createElement('div');
+  div.className = 'msg ' + msg.role;
+4 lines hidden
+  } else {
+    div.innerHTML = '<div class="avatar"><span class="material-symbols-rounded">auto_awesome</span></div>'
+      + '<div class="ai-content">'
+      + '<div class="md-body">' + mdToHtml(msg.content) + '</div>'
+      + '<div class="md-body">' + renderAiBody(msg) + '</div>'
+      + '<div class="msg-footer">' + footerChips(msg, false) + '</div>'
+      + '<div class="actions">'
+      + '<button class="act" data-act="copy" title="复制"><span class="material-symbols-rounded">content_copy</span></button>'
+35 lines hidden
+}
+ 
+function renderModelMenu(){
+  els.modelMenu.innerHTML = '<div class="mm-label">选择模型</div>' + MODELS.map(m =>
+    '<div class="model-item' + (m.id === state.modelId ? ' active' : '') + '" data-id="' + m.id + '" role="option" tabindex="0">'
+    + '<span class="mi-dot" style="background:' + m.accent + '"></span>'
+    + '<div class="mi-main"><div class="mi-name">' + m.name
+    + '<span class="mi-badge" style="color:' + m.accent + ';background:color-mix(in srgb,' + m.accent + ' 14%,transparent)">' + m.badge + '</span></div>'
+    + '<div class="mi-desc">' + m.desc + '</div></div>'
+    + '<div class="mi-right"><span class="mi-ctx">' + m.context + ' ctx</span>'
+    + '<span class="material-symbols-rounded mi-check">check</span></div>'
+    + '</div>'
+  ).join('');
+  let html = '<div class="mm-label">选择模型</div>';
+  for (const p of Object.values(PROVIDERS)){
+    const ok = hasKey(p.id);
+    html += '<div class="mm-group"><span class="mm-group-name">' + p.name + '</span>'
+      + '<span class="mm-key-state' + (ok ? ' ok' : '') + '"><span class="mm-kdot"></span>' + (ok ? '已连接' : '未配置 Key') + '</span></div>';
+    html += MODELS.filter(m => m.provider === p.id).map(m =>
+      '<div class="model-item' + (m.id === state.modelId ? ' active' : '') + '" data-id="' + m.id + '" role="option" tabindex="0">'
+      + '<span class="mi-dot" style="background:' + m.accent + '"></span>'
+      + '<div class="mi-main"><div class="mi-name">' + m.name
+      + '<span class="mi-badge" style="color:' + m.accent + ';background:color-mix(in srgb,' + m.accent + ' 14%,transparent)">' + m.badge + '</span></div>'
+      + '<div class="mi-desc">' + m.desc + ' · <span class="mi-api">' + m.apiModel + '</span></div></div>'
+      + '<div class="mi-right"><span class="mi-ctx">' + m.context + ' ctx</span>'
+      + '<span class="material-symbols-rounded mi-check">check</span></div>'
+      + '</div>'
+    ).join('');
+  }
+  els.modelMenu.innerHTML = html;
+}
+function updateModelBtn(){
+  const m = getModel(state.modelId);
+85 lines hidden
+  generate();
+}
+ 
+/* 传给 API 的历史（过滤空内容，如出错的 AI 消息） */
+function buildHistory(chat){
+  return chat.messages.filter(m => m.content && m.content.trim());
+}
+ 
+/* 统一解析 SSE 流 */
+async function readSSE(res, onData){
+  const reader = res.body.getReader();
+  const dec = new TextDecoder();
+  let buf = '';
+  while (true){
+    const { done, value } = await reader.read();
+    if (done) break;
+    buf += dec.decode(value, { stream: true });
+    const lines = buf.split('\n');
+    buf = lines.pop();
+    for (const line of lines){
+      const t = line.trim();
+      if (!t.startsWith('data:')) continue;
+      const payload = t.slice(5).trim();
+      if (payload === '[DONE]') return;
+      try { onData(JSON.parse(payload)); } catch {}
+    }
+  }
+}
+ 
+/* 真实 API 流式调用（DeepSeek / Gemini，均为 SSE） */
+async function streamReal(aiMsg, body, model, history, t0, signal){
+  const p = PROVIDERS[model.provider];
+  const baseUrl = (state.baseUrls[p.id] || p.defaultBaseUrl).replace(/\/+$/, '');
+  let res;
+  if (p.id === 'google'){
+    res = await fetch(baseUrl + '/v1beta/models/' + model.apiModel + ':streamGenerateContent?alt=sse', {
+      method: 'POST', signal,
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': state.keys.google },
+      body: JSON.stringify({
+        contents: history.map(m => ({ role: m.role === 'user' ? 'user' : 'model', parts: [{ text: m.content }] })),
+      }),
+    });
+  } else {
+    res = await fetch(baseUrl + '/chat/completions', {
+      method: 'POST', signal,
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + state.keys.deepseek },
+      body: JSON.stringify({
+        model: model.apiModel, stream: true, stream_options: { include_usage: true },
+        messages: history.map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content })),
+      }),
+    });
+  }
+  if (!res.ok){
+    let msg = 'HTTP ' + res.status;
+    try {
+      const j = await res.json();
+      msg = (j.error && (j.error.message || j.error.msg)) || j.message || msg;
+    } catch {}
+    if (res.status === 401 || res.status === 403) msg = 'API Key 无效或无权限（' + res.status + '）';
+    else if (res.status === 429) msg = '请求过于频繁，已被限流（429）';
+    throw new Error(msg);
+  }
+  let first = true, acc = '';
+  await readSSE(res, chunk => {
+    if (first){ aiMsg.stats.ttftMs = Math.round(performance.now() - t0); first = false; }
+    let piece = '';
+    if (p.id === 'google'){
+      const cand = chunk.candidates && chunk.candidates[0];
+      if (cand && cand.content && cand.content.parts) piece = cand.content.parts.map(x => x.text || '').join('');
+      const u = chunk.usageMetadata;
+      if (u){
+        if (u.promptTokenCount) aiMsg.stats.promptTokens = u.promptTokenCount;
+        if (u.candidatesTokenCount) aiMsg.stats.completionTokens = u.candidatesTokenCount;
+      }
+    } else {
+      piece = (chunk.choices && chunk.choices[0] && chunk.choices[0].delta && chunk.choices[0].delta.content) || '';
+      if (chunk.usage){
+        if (chunk.usage.prompt_tokens) aiMsg.stats.promptTokens = chunk.usage.prompt_tokens;
+        if (chunk.usage.completion_tokens) aiMsg.stats.completionTokens = chunk.usage.completion_tokens;
+      }
+    }
+    if (piece){
+      acc += piece;
+      aiMsg.content = acc;
+      if (!aiMsg.stats.completionTokens) aiMsg.stats.completionTokens = estimateTokens(acc);
+      body.innerHTML = mdToHtml(acc);
+      if (isNearBottom()) scrollToBottom(false);
+    }
+  });
+  if (!acc) throw new Error('接口未返回内容，请检查模型与 Key 是否匹配');
+}
+ 
+/* 本地演示模式 */
+async function streamMock(aiMsg, body, model, lastUser, t0){
+  const ttft = rand(model.ttft[0], model.ttft[1]);
+  await sleep(ttft);
+  aiMsg.stats.ttftMs = Math.round(ttft);
+  if (state.abortFlag) return;
+  const full = buildMockReply(lastUser.content, model);
+  let i = 0;
+  while (i < full.length){
+    if (state.abortFlag) break;
+    i = Math.min(full.length, i + Math.max(1, Math.round(rand(2, 7) * model.speed)));
+    aiMsg.content = full.slice(0, i);
+    aiMsg.stats.completionTokens = estimateTokens(aiMsg.content);
+    body.innerHTML = mdToHtml(aiMsg.content);
+    if (isNearBottom()) scrollToBottom(false);
+    await sleep(rand(14, 42) / model.speed);
+  }
+}
+ 
+async function generate(){
+  const chat = activeChat();
+  const model = getModel(state.modelId);
+  const lastUser = [...chat.messages].reverse().find(m => m.role === 'user');
+  if (!lastUser) return;
+ 
+  const useApi = hasKey(model.provider);
+  const aiMsg = {
+    id: uid(), role: 'ai', content: '', modelId: model.id, ts: Date.now(),
+    stats: { promptTokens: estimateTokens(lastUser.content), completionTokens: 0, durationMs: 0, ttftMs: 0, cost: 0, aborted: false },
+    stats: { promptTokens: estimateTokens(lastUser.content), completionTokens: 0, durationMs: 0, ttftMs: 0, cost: 0, aborted: false, error: '', mode: useApi ? 'api' : 'demo' },
+  };
+  chat.messages.push(aiMsg);
+ 
+10 lines hidden
+ 
+  const t0 = performance.now();
+  const liveEl = el.querySelector('[data-live]');
+  const liveTimer = setInterval(() => {
+  const ctrl = new AbortController();
+  const tick = setInterval(() => {
+    if (state.abortFlag && useApi) ctrl.abort();
+    if (liveEl) liveEl.textContent = ((performance.now() - t0) / 1000).toFixed(1) + 's · ' + fmtNum(aiMsg.stats.completionTokens) + ' tokens';
+  }, 120);
+  }, 100);
+ 
+  // 模拟首字延迟（TTFT）
+  const ttft = rand(model.ttft[0], model.ttft[1]);
+  await sleep(ttft);
+  aiMsg.stats.ttftMs = Math.round(ttft);
+ 
+  if (!state.abortFlag){
+    const full = buildMockReply(lastUser.content, model);
+    let i = 0;
+    body.classList.add('streaming');
+    while (i < full.length){
+      if (state.abortFlag) break;
+      i = Math.min(full.length, i + Math.max(1, Math.round(rand(2, 7) * model.speed)));
+      aiMsg.content = full.slice(0, i);
+      aiMsg.stats.completionTokens = estimateTokens(aiMsg.content);
+      body.innerHTML = mdToHtml(aiMsg.content);
+      if (isNearBottom()) scrollToBottom(false);
+      await sleep(rand(14, 42) / model.speed);
+    }
+  body.classList.add('streaming');
+  try {
+    if (useApi) await streamReal(aiMsg, body, model, buildHistory(chat), t0, ctrl.signal);
+    else await streamMock(aiMsg, body, model, lastUser, t0);
+  } catch (err){
+    if (err && err.name === 'AbortError') aiMsg.stats.aborted = true;
+    else aiMsg.stats.error = (err && err.message) || String(err);
+  }
+  clearInterval(liveTimer);
+  clearInterval(tick);
+  body.classList.remove('streaming');
+  aiMsg.stats.durationMs = Math.round(performance.now() - t0);
+  aiMsg.stats.aborted = state.abortFlag;
+  aiMsg.stats.cost = calcCost(model, aiMsg.stats.promptTokens, aiMsg.stats.completionTokens);
+ 
+  // 收尾渲染
+  body.classList.remove('streaming');
+  if (aiMsg.content){
+  if (aiMsg.stats.error){
+    body.innerHTML = renderAiBody(aiMsg);
+  } else if (aiMsg.content){
+    body.innerHTML = mdToHtml(aiMsg.content);
+  } else {
+    body.innerHTML = '<p style="color:var(--on-surface-variant)">（已停止，未生成内容）</p>';
+96 lines hidden
+  state.modelId = item.dataset.id;
+  renderModelMenu(); updateModelBtn(); save();
+  setModelMenuOpen(false);
+  toast('已切换到 ' + getModel(state.modelId).name);
+  const m = getModel(state.modelId);
+  toast('已切换到 ' + m.name + (hasKey(m.provider) ? '' : ' · 未配置 Key，将以演示模式回复'));
+});
+document.addEventListener('click', e => {
+  if (!e.target.closest('.model-select')) setModelMenuOpen(false);
+2 lines hidden
+  if (e.key === 'Escape'){
+    setModelMenuOpen(false);
+    setMobileSidebar(false);
+    closeSettings();
+  }
+});
+ 
+6 lines hidden
+$('#attachBtn').addEventListener('click', () => toast('演示环境暂不支持附件'));
+$('#micBtn').addEventListener('click', () => toast('演示环境暂不支持语音输入'));
+ 
+/* ============ 设置对话框 ============ */
+const settingsDlg = $('#settingsDlg');
+function openSettings(){
+  for (const p of Object.values(PROVIDERS)){
+    $('#key-' + p.id).value = state.keys[p.id] || '';
+    $('#url-' + p.id).value = state.baseUrls[p.id] || '';
+  }
+  updateSettingsDots();
+  settingsDlg.classList.add('show');
+}
+function closeSettings(){ settingsDlg.classList.remove('show'); }
+function updateSettingsDots(){
+  for (const p of Object.values(PROVIDERS)){
+    $('#dot-' + p.id).classList.toggle('ok', $('#key-' + p.id).value.trim().length > 0);
+  }
+}
+function saveSettings(){
+  for (const p of Object.values(PROVIDERS)){
+    state.keys[p.id] = $('#key-' + p.id).value.trim();
+    const u = $('#url-' + p.id).value.trim();
+    state.baseUrls[p.id] = (u && u !== p.defaultBaseUrl) ? u.replace(/\/+$/, '') : '';
+  }
+  save();
+  renderModelMenu();
+  closeSettings();
+  toast('设置已保存');
+}
+$('#settingsBtn').addEventListener('click', openSettings);
+$('#dlgCancel').addEventListener('click', closeSettings);
+$('#dlgSave').addEventListener('click', saveSettings);
+settingsDlg.addEventListener('click', e => { if (e.target === settingsDlg) closeSettings(); });
+document.querySelectorAll('.eye').forEach(b => b.addEventListener('click', () => {
+  const input = document.getElementById(b.dataset.eye);
+  const show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  b.querySelector('.material-symbols-rounded').textContent = show ? 'visibility_off' : 'visibility';
+}));
+document.querySelectorAll('.dlg-body input').forEach(i => i.addEventListener('input', updateSettingsDots));
+ 
+/* 消息操作与代码复制（事件委托） */
+els.chatCol.addEventListener('click', async e => {
+  const cbCopy = e.target.closest('.cb-copy');
+11 lines hidden
+    send(card.querySelector('.sc-text').textContent);
+    return;
+  }
+  if (e.target.closest('.err-act')){
+    openSettings();
+    return;
+  }
+  const act = e.target.closest('.act');
+  if (!act) return;
+  const msgEl = act.closest('.msg');
+15 lines hidden
+ 
+/* Material 涟漪效果 */
+document.addEventListener('pointerdown', e => {
+  const b = e.target.closest('.icon-btn, .send-btn, .new-chat, .suggest-card, .model-item, .act, .chat-item, .cb-copy');
+  const b = e.target.closest('.icon-btn, .send-btn, .new-chat, .suggest-card, .model-item, .act, .chat-item, .cb-copy, .btn-text, .btn-filled, .sb-foot-item, .eye');
+  if (!b) return;
+  const r = b.getBoundingClientRect();
+  const s = document.createElement('span');
+23 lines hidden
+<\/script>
+</body>
+</html>
