@@ -802,6 +802,8 @@
       models: ['claude-sonnet-5-5', 'claude-fable-5', 'claude-opus-5', 'claude-opus-4-8',
         'claude-sonnet-4-6', 'claude-haiku-4-5', 'claude-opus-4-5', 'claude-sonnet-4-5',
         'claude-3-7-sonnet-latest', 'claude-3-5-haiku-latest'],
+      // Anthropic 默认禁止浏览器跨域直连（CORS），必须附带此官方开关头才放行
+      extraHeaders: { 'anthropic-dangerous-direct-browser-access': 'true' },
       icon: '<g stroke="#D97757" stroke-width="2.6" stroke-linecap="round" fill="none"><path d="M12 3v18"/><path d="M4.2 7.5l15.6 9"/><path d="M19.8 7.5l-15.6 9"/></g>'
     },
     dashscope: {
@@ -1341,12 +1343,16 @@
   // ---------- 请求 ----------
   async function fetchOpenAIStream(messages, onDelta) {
     const url = normalizeBaseUrl(getBaseUrl()) + '/chat/completions';
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + getApiKey()
+    };
+    // 部分提供商（如 Anthropic）要求额外请求头才允许浏览器直连
+    const extra = PROVIDERS[config.provider] && PROVIDERS[config.provider].extraHeaders;
+    if (extra) Object.assign(headers, extra);
     const res = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + getApiKey()
-      },
+      headers: headers,
       body: JSON.stringify({
         model: getSelectedModel(),
         messages: messages,
@@ -1484,6 +1490,32 @@
     inputEl.style.height = Math.min(inputEl.scrollHeight, 200) + 'px';
   }
 
+  // 网络层失败（CORS 拦截 / 连不上）时给出可读诊断，而非原始 "Failed to fetch"
+  function describeError(err) {
+    const raw = String(err && err.message || err);
+    if (/failed to fetch|networkerror|load failed|fetch failed|network error/i.test(raw)) {
+      const p = PROVIDERS[config.provider];
+      let hint = '网络请求未能发出或被浏览器拦截（' + raw + '）。常见原因：<br>' +
+        '① 提供商不允许浏览器跨域直连（CORS 限制）；<br>' +
+        '② 当前网络环境被对方屏蔽（例如 Anthropic 不向中国大陆的网络提供服务，需要代理）；<br>' +
+        '③ 接口地址填写有误。';
+      if (config.provider === 'anthropic') {
+        hint += '<br>已自动附带 Anthropic 官方浏览器直连头；若仍报此错，大概率是网络地区限制，请通过代理网络访问。';
+      }
+      return hint;
+    }
+    if (/credit balance is too low/i.test(raw)) {
+      return 'Anthropic 账户余额不足：' + escapeHtml(raw) +
+        '<br>请前往 Anthropic 控制台（console.anthropic.com → Plans &amp; Billing）购买 Credits 充值后再试。' +
+        '注意：Anthropic 为预付费积分制，新账号的试用额度用完或过期后需手动充值；充值需国际支付方式，且 Anthropic 不向中国大陆地区提供服务。';
+    }
+    if (/401|invalid api key|incorrect api key|authentication/i.test(raw)) {
+      return '认证失败：' + escapeHtml(raw) + '<br>请检查 ' + escapeHtml(PROVIDERS[config.provider].label) +
+        ' 的 API Key 是否正确、是否有余额。';
+    }
+    return escapeHtml(raw || '未知错误');
+  }
+
   async function send() {
     const text = inputEl.value.trim();
     if (!text || isGenerating) return;
@@ -1557,7 +1589,7 @@
           (fullText ? convertMarkdown(fullText) : '');
       } else {
         aiMsg.querySelector('.content').innerHTML =
-          '<span style="color:#d93025">出错：' + escapeHtml(err.message || '未知错误') + '</span>';
+          '<span style="color:#d93025">出错：' + describeError(err) + '</span>';
         if (fullText) {
           aiMsg.querySelector('.content').innerHTML += convertMarkdown(fullText);
           session.messages.push({ role: 'assistant', content: fullText });
